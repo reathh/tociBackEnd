@@ -8,6 +8,7 @@ $app = new \Slim\Slim();
 
 $app->post('/register', 'registerUser');
 $app->post('/login', 'loginUser');
+$app->post('/chat/addMessage', 'addMessage');
 
 $app->run();
 
