@@ -1,5 +1,6 @@
 <?php
-function addUserToTable($user) {
+function addUserToDb($user) {
+    checkForExistingUsername($user->username);
     checkForExistingEmail($user->email);
 
     $insertUserSQL = 'INSERT INTO users (username,authKey,email, fullName)
@@ -33,10 +34,20 @@ function checkForExistingEmail($email) {
         throw new Exception('Email already used');
     }
 }
+function checkForExistingUsername($username) {
+    $sql = "SELECT EXISTS(SELECT 1 FROM users WHERE username='$username')";
 
-function addSessionTokenToUser($userWithId) {
-    $addNewSessionKeySQL = 'INSERT INTO active_sessions (user_id, sessionKey, userAgent, ip, endAt)
-    VALUES (:userId, :sessionKey, :userAgent, :ip, DATE_ADD(NOW(), INTERVAL 1 DAY))';
+    $db = getConnection();
+    $query = $db->query($sql);
+    if ($query->fetch()[0] == 1) {
+        throw new Exception('Username already used');
+    }
+}
+
+function addSessionKeyToUser($userWithId) {
+    $interval = $userWithId->rememberUser == true ? '1 MONTH' : '1 DAY';
+    $addNewSessionKeySQL = "INSERT INTO active_sessions (user_id, sessionKey, userAgent, ip, endAt)
+    VALUES (:userId, :sessionKey, :userAgent, :ip, DATE_ADD(NOW(), INTERVAL $interval))";
 
     $request = \Slim\Slim::getInstance()->request();
 
@@ -56,10 +67,27 @@ function addSessionTokenToUser($userWithId) {
 }
 function generateSessionKey($userId) {
     $SessionKeyChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    $sessionKeyLength = 50;
+    $sessionKeyLength = 100;
     $sessionKey = $userId;
     while (strlen($sessionKey) < $sessionKeyLength) {
         $sessionKey .= $SessionKeyChars[mt_rand(0, (strlen($SessionKeyChars)-1))];
     }
     return $sessionKey;
+}
+
+function findUserInDB($user) {
+    $userAndPassword = $user->username . $user->password;
+    $authKey = sha1($userAndPassword);
+
+    $findUserSQL = "SELECT id, fullName FROM users WHERE authKey='$authKey'";
+
+    $db = getConnection();
+    $query = $db->query($findUserSQL);
+    if (($result = $query->fetch()) == false) {
+       throw new Exception('Invalid login credentials');
+    }
+    $user->id = $result[0];
+    $user->fullName = $result[1];
+    unset($user->password);
+    return $user;
 }

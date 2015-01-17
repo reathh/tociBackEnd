@@ -13,7 +13,9 @@ fullName: string
 returns:
 username: string
 password: string
-email: string
 fullName: string
 sessionKey: string
+
+exceptions when:
+Dublicated email
 
