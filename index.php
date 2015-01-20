@@ -9,7 +9,11 @@ $app = new \Slim\Slim();
 
 $app->post('/register', 'registerUser');
 $app->post('/login', 'loginUser');
-$app->post('/chat/addMessage', 'addMessage');
+
+$app->post('/chat/message', 'addMessage');
+
+$app->get('/chat/user/messages/:to', 'getMessages');
+$app->get('/chat/user/chronology', 'getUserChronology');
 
 $app->run();
 
@@ -47,24 +51,53 @@ function addMessage() {
     $request = $app->request();
     $message = json_decode($request->getBody());
 
-    try {
-        $sessionKey = $request->headers->get('session_key');
-        if ($sessionKey == null) {
-            throw new Exception("Session key is empty");
-        }
-        $message->fromUserId = findUserBySessionToken($sessionKey);
-    } catch (Exception $e) {
-        $app->halt(400, "Not authorized");
-    }
+    $message->fromUserId = tryFindingUserByHeaderSessionKey();
 
-    if ($message->content === null || $message->content === "") {
+    if (isNullOrEmpty($message->content)) {
         $app->halt(400, "Content cannot be empty");
     }
 
-    if ($message->toUserId === null || $message->toUserId === "") {
+    if (isNullOrEmpty($message->toUserId)) {
         $app->halt(400, "Recipient's id cannot be empty");
     }
     $addedMessage = addMessageToDb($message);
 
     echo json_encode($addedMessage);
+}
+
+function getMessages($to) {
+    $app = \Slim\Slim::getInstance();
+    $request = $app->request();
+
+    $pageNumber = $request->get('pageNumber');
+    $pageSize = $request->get('pageSize');
+
+    if (isNullOrEmpty($to)) {
+        $app->halt(400, "to cannot be empty");
+    }
+    $from = tryFindingUserByHeaderSessionKey();
+
+    $messages = getMessagesFromDb($from, $to, $pageSize, $pageNumber);
+
+    echo json_encode($messages);
+}
+
+function getUserChronology() {
+    $app = \Slim\Slim::getInstance();
+    $request = $app->request();
+    $pageNumber = $request->get('pageNumber');
+    $pageSize = $request->get('pageSize');
+
+    $userId = tryFindingUserByHeaderSessionKey();
+
+    $chronology = getUserChronologyFromDb($userId, $pageSize, $pageNumber);
+
+    echo json_encode($chronology);
+}
+
+function isNullOrEmpty($value) {
+    if ($value === null || $value === "") {
+        return true;
+    }
+    return false;
 }

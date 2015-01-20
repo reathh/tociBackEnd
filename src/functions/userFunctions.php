@@ -102,3 +102,19 @@ function findUserBySessionToken($sessionKey) {
     }
     return $result['user_id'];
 }
+
+function tryFindingUserByHeaderSessionKey() {
+    $app = \Slim\Slim::getInstance();
+    $request = $app->request();
+
+    try {
+        $sessionKey = $request->headers->get('session_key');
+        if ($sessionKey == null) {
+            throw new Exception("Session key is empty");
+        }
+        $userId = findUserBySessionToken($sessionKey);
+        return $userId;
+    } catch (Exception $e) {
+        $app->halt(400, "Not authorized");
+    }
+}
