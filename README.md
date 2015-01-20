@@ -20,6 +20,7 @@ exceptions when:
 Dublicated email
 Dublicated username
 
+
 # POST api/login
 
 body parameters:
@@ -34,3 +35,13 @@ sessionKey: string
 
 exceptions when:
 Incorrect login credentials
+
+
+# POST api/chat/addMessage
+
+header parameters:
+sessionKey: user's session key
+
+body parameters:
+toUserId: integer
+content: string
