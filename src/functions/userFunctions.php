@@ -91,3 +91,14 @@ function findUserInDB($user) {
     unset($user->password);
     return $user;
 }
+
+function findUserBySessionToken($sessionKey) {
+    $sql = "SELECT * FROM active_sessions WHERE sessionKey='$sessionKey'";
+
+    $db = getConnection();
+    $query = $db->query($sql);
+    if (($result = $query->fetch()) == false) {
+        throw new Exception('Could not find user with this session key');
+    }
+    return $result['user_id'];
+}

@@ -34,7 +34,7 @@ fullName: string
 sessionKey: string
 
 exceptions when:
-Incorrect login credentials
+Incorrect username or password: 500: "Incorrect login credentials"
 
 
 # POST api/chat/addMessage
@@ -45,3 +45,8 @@ sessionKey: user's session key
 body parameters:
 toUserId: integer
 content: string
+
+exceptions when:
+Incorrect or null sessionKey: 401: "You are not authorized"
+Null or empty content: 400: "Content cannot be empty"
+Null or empty toUserId: 400:Recipient's id cannot be empty
